@@ -543,25 +543,4 @@ int main(int argc, char *argv[])
 	glutMainLoop();
 
 	return 0;
-}#version 430 
-out vec4 FragColor;
-
-in vec3 TexCoords;
-
-uniform samplerCube skybox;
-
-void main()
-{    
-    FragColor = texture(skybox, TexCoords);
-}#version 430 
-layout (location = 0) in vec3 aPos;
-
-out vec3 TexCoords;
-
-uniform mat4 mvp;
-
-void main()
-{
-    TexCoords = aPos;
-    gl_Position = mvp * vec4(aPos, 1.0);
-}  
+}
