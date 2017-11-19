@@ -10,9 +10,14 @@
 #include <vector>
 
 void bindEarth(const char * path);
+void bindGlass(const char * path);
+void bindMoon(const char * path);
 void bindCar(const char * path);
+<<<<<<< HEAD
 void bindCube();
 
+=======
+>>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 
 /*** END OF FILE ***/
 
