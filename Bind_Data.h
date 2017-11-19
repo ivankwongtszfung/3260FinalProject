@@ -11,7 +11,7 @@
 
 void bindEarth(const char * path);
 void bindCar(const char * path);
-
+void bindCube();
 
 
 /*** END OF FILE ***/
