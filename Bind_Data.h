@@ -10,9 +10,9 @@
 #include <vector>
 
 void bindEarth(const char * path);
+void bindGlass(const char * path);
+void bindMoon(const char * path);
 void bindCar(const char * path);
-
-
 
 /*** END OF FILE ***/
 
