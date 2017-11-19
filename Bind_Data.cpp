@@ -10,13 +10,12 @@ int drawMoonSize = 0;
 GLuint carVao;
 int drawCarSize = 0;
 
-<<<<<<< HEAD
 GLuint cubeVao;
 int drawCubeSize = 0;
-=======
+
 GLuint glassVao;
 int drawGlassSize = 0;
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
+
 
 void bindEarth(const char * path)
 {
@@ -185,7 +184,6 @@ void bindCar(const char * path)
 	//draw data
 	drawCarSize = vao5_v.size();
 }
-<<<<<<< HEAD
 
 void bindCube() {
 	GLuint vboID;
@@ -242,6 +240,3 @@ void bindCube() {
 	drawCubeSize = 12 * 3;
 }
 
-
-=======
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba

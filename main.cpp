@@ -24,20 +24,16 @@ const float ASPECT = float(16) / 9;
 
 int  mainWindowID;
 GLint programID;
-<<<<<<< HEAD
 GLint skyboxID;
 //earth 
 GLuint TextureEarth;
 
-
-=======
 
 // view matrix
 glm::mat4 common_viewM;
 glm::mat4 common_projection;
 // ============================= Object conf =============================//
 //Planet A
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 extern GLuint earthVao;
 extern int drawEarthSize;
 GLuint TextureEarth;
@@ -60,9 +56,10 @@ float glass_innRot_Degree = 0.0f;
 //Space vehicle
 extern GLuint carVao;
 extern int drawCarSize;
-<<<<<<< HEAD
-
-float car_innRot_Degree = 0.0f;
+GLuint TextureCar;
+float car_outnRot_Degree = 0.0f;
+float car_orbit_radius = 8.0f;
+float car_orbit_speed = 0.02f;
 //skybox
 GLuint earth_cubemapTexture;
 
@@ -74,20 +71,11 @@ float cube_innRot_Degree = 0.0f;
 glm::mat4 common_viewM;
 glm::mat4 common_projection;
 
-
-
-// ============================= //
-=======
-GLuint TextureCar;
-float car_outnRot_Degree = 0.0f;
-float car_orbit_radius = 8.0f;
-float car_orbit_speed = 0.02f;
 //cube
 GLuint cubeID;
 int cubeVaoSize;
 
 // ============================= camera conf =============================//
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 const float M_PI = 3.14159265;
 float radius = 30.0f;
 float initViewHorizontal = -90.0f;
@@ -175,9 +163,6 @@ void PassiveMouse(int x, int y)
 void LoadAllTextures()
 {
 	TextureEarth = loadBMP2Texture("texture/earth.bmp");
-<<<<<<< HEAD
-	TextureCar = loadBMP2Texture("texture/helicopter.bmp");
-	
 	//skybox
 	vector <const GLchar*> earth_faces;
 	earth_faces.push_back("texture/aurora_skybox/right.bmp");
@@ -187,11 +172,12 @@ void LoadAllTextures()
 	earth_faces.push_back("texture/aurora_skybox/back.bmp");
 	earth_faces.push_back("texture/aurora_skybox/front.bmp");
 	earth_cubemapTexture = loadCubemap(earth_faces);
-=======
+	//glass
 	TextureGlass = loadBMP2Texture("texture/glass_a.bmp");
+	//moon
 	TextureMoon = loadBMP2Texture("texture/apple.bmp");
+	//car
 	TextureCar = loadBMP2Texture("texture/helicopter.bmp");
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 }
 
 void sendDataToOpenGL()
@@ -409,17 +395,12 @@ void drawCar(void)
 
 	glBindVertexArray(carVao);
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
-<<<<<<< HEAD
-	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(car_innRot_Degree), glm::vec3(0, 1, 1));
-	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(15.0f, 10.0f, 10.0f));
-=======
 	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), 89.0f, glm::vec3(0, 1, 1));
 	//init position
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f + car_orbit_radius, 2.0f+car_orbit_radius, 0.0f));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(-car_orbit_radius, -car_orbit_radius, 0.0f));
 	trans_M *= glm::rotate(glm::mat4(), car_outnRot_Degree, glm::vec3(0, 0, 1));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(car_orbit_radius, car_orbit_radius, 0.0f));
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 	glm::mat4 Model = trans_M * rot_M * scale_M;
 
 	GLint M_ID = glGetUniformLocation(programID, "MM");
@@ -449,27 +430,17 @@ void paintGL(void)
 	// view matrix
 	common_viewM = glm::lookAt(glm::vec3(cameraX, cameraY, cameraZ), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	// projection matrix
-<<<<<<< HEAD
-	common_projection = glm::perspective(camera_fov, 1.0f, 0.1f, 200.0f);
-
-
-=======
 	common_projection = glm::perspective(camera_fov, 16.0f/9.0f, 0.1f, 200.0f);
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 	
 	//=== draw ===//
 	// set lighting parameters
 	set_lighting();
-<<<<<<< HEAD
 	//set_lighting_skybox();
-	// draw earth
+	//skybox
 	glDepthMask(GL_FALSE);
 	drawcube();
-	glDepthMask(GL_TRUE);
-	
-=======
+	glDepthMask(GL_TRUE);	
 	// draw Planet A
->>>>>>> 564edf2ae8174c12611cbc7ac73678f82d9a62ba
 	drawEarth();
 	// draw Planet B
 	drawMoon();
