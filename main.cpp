@@ -25,9 +25,7 @@ const float ASPECT = float(16) / 9;
 int  mainWindowID;
 GLint programID;
 GLint skyboxID;
-//earth 
-GLuint TextureEarth;
-
+GLint lightID;
 
 // view matrix
 glm::mat4 common_viewM;
@@ -67,14 +65,15 @@ extern GLuint cubeVao;
 extern int drawCubeSize;
 
 float cube_innRot_Degree = 0.0f;
-// view matrix
-glm::mat4 common_viewM;
-glm::mat4 common_projection;
 
 //cube
 GLuint cubeID;
 int cubeVaoSize;
-
+//light 
+float light_innRot_Degree = 0.0f;
+float xLightPos = 0.0f;
+float zLightPos = 0.0f;
+float yLightPos = 20.0f;
 // ============================= camera conf =============================//
 const float M_PI = 3.14159265;
 float radius = 30.0f;
@@ -127,6 +126,55 @@ void keyboard(unsigned char key, int x, int y)
 	else if (key == 'd') {
 		printf("press d");
 	}
+	else if (key == '7') {
+		a_brightness += 0.1f;
+		printf("%.3lf\n", a_brightness);
+	}
+	else if (key == '1') {
+		a_brightness -= 0.1f;
+		printf("%.3lf\n", a_brightness);
+	}
+	else if (key == '8') {
+		d_brightness += 0.1f;
+		printf("%.3lf\n", d_brightness);
+	}
+	else if (key == '2') {
+		d_brightness -= 0.1f;
+		printf("%.3lf\n", d_brightness);
+	}
+	else if (key == '9') {
+		s_brightness += 0.1f;
+		printf("%.3lf\n", s_brightness);
+	}
+	else if (key == '3') {
+		s_brightness -= 0.1f;
+		printf("%.3lf\n", s_brightness);
+	}
+	else if (key == 'q') {
+		xLightPos += 0.1f;
+		printf("%.3lf\n", xLightPos);
+	}
+	else if (key == 'z') {
+		xLightPos -= 0.1f;
+		printf("%.3lf\n", xLightPos);
+	}
+	else if (key == 'w') {
+		yLightPos += 0.1f;
+		printf("%.3lf\n", yLightPos);
+	}
+	else if (key == 'x') {
+		yLightPos -= 0.1f;
+		printf("%.3lf\n", yLightPos);
+	}
+	else if(key=='e'){
+		zLightPos += 0.1f;
+		printf("%.3lf\n", zLightPos);
+	}
+	else if(key=='c'){
+		zLightPos -= 0.1f;
+		printf("%.3lf\n", zLightPos);
+	}
+
 }
 
 void move(int key, int x, int y)
@@ -151,6 +199,11 @@ void move(int key, int x, int y)
 			car_orbit_radius -= 0.5f;
 		printf("%.3lf\n", car_orbit_radius);
 	}
+	
+
+	
+	
+
 }
 
 void PassiveMouse(int x, int y)
@@ -193,8 +246,6 @@ void sendDataToOpenGL()
 	LoadAllTextures();
 }
 
-float zLightPos = 0.0f;
-float yLightPos = 20.0f;
 void set_lighting()
 {
 	glUseProgram(programID);
@@ -217,7 +268,7 @@ void set_lighting()
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
-	glm::vec3 lightPosition(0.0, yLightPos, zLightPos);
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
 	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	// light color
@@ -226,33 +277,33 @@ void set_lighting()
 	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
 }
 
-void set_lighting_skybox()
+void set_lighting_light()
 {
-	glUseProgram(skyboxID);
+	glUseProgram(lightID);
 
 	// ambient
-	GLint ambientLightUniformLocation = glGetUniformLocation(skyboxID, "ambientLight");
+	GLint ambientLightUniformLocation = glGetUniformLocation(lightID, "ambientLight");
 	glm::vec3 ambientLight(a_brightness, a_brightness, a_brightness);
 	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
 	// diffusion
-	GLint kd = glGetUniformLocation(skyboxID, "coefficient_d");
+	GLint kd = glGetUniformLocation(lightID, "coefficient_d");
 	glm::vec3 vec_kd(d_brightness, d_brightness, d_brightness);
 	glUniform3fv(kd, 1, &vec_kd[0]);
 	// specular
-	GLint ks = glGetUniformLocation(skyboxID, "coefficient_s");
+	GLint ks = glGetUniformLocation(lightID, "coefficient_s");
 	glm::vec3 vec_ks(s_brightness, s_brightness, s_brightness);
 	glUniform3fv(ks, 1, &vec_ks[0]);
 	// eye position
-	GLint eyePositionUniformLocation = glGetUniformLocation(skyboxID, "eyePositionWorld");
+	GLint eyePositionUniformLocation = glGetUniformLocation(lightID, "eyePositionWorld");
 	vec3 eyePosition(cameraX, cameraY, cameraZ);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
-	GLint lightPositionUniformLocation = glGetUniformLocation(skyboxID, "lightPositionWorld");
+	GLint lightPositionUniformLocation = glGetUniformLocation(lightID, "lightPositionWorld");
 	glm::vec3 lightPosition(0.0, yLightPos, zLightPos);
 	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	// light color
-	GLint lightColorUniformLocation = glGetUniformLocation(skyboxID, "lightColor");
+	GLint lightColorUniformLocation = glGetUniformLocation(lightID, "lightColor");
 	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
 	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
 }
@@ -351,6 +402,31 @@ void drawGlass(void)
 	glDrawArrays(GL_TRIANGLES, 0, drawGlassSize);
 }
 
+void drawLightCube() {
+
+	//cube
+	GLfloat scale_fact = 2.0f;
+
+	glUseProgram(lightID);
+	//skybox cube
+	glBindVertexArray(cubeVao);
+
+	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
+	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(light_innRot_Degree), glm::vec3(0, 1, 0));
+	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+	glm::mat4 Model = trans_M * rot_M * scale_M;
+
+	GLint M_ID = glGetUniformLocation(programID, "MM");
+	glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
+	GLint V_ID = glGetUniformLocation(programID, "VM");
+	glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
+	GLint P_ID = glGetUniformLocation(programID, "PM");
+	glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
+	// texture
+
+	glDrawArrays(GL_TRIANGLES, 0, drawCubeSize);
+	glBindVertexArray(0);
+}
 void drawMoon(void)
 {
 	GLfloat scale_fact = 0.3f;
@@ -435,7 +511,8 @@ void paintGL(void)
 	//=== draw ===//
 	// set lighting parameters
 	set_lighting();
-	//set_lighting_skybox();
+	set_lighting_light();
+	glEnable(GL_LIGHTING);
 	//skybox
 	glDepthMask(GL_FALSE);
 	drawcube();
@@ -448,7 +525,9 @@ void paintGL(void)
 	drawGlass();
 	//draw space vehicle
 	drawCar();
+	//draw light cube
 	
+	drawLightCube();
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -457,10 +536,16 @@ void Shaders_Installer()
 {
 	programID = installShaders("shader/Common.vs", "shader/Common.frag");
 	skyboxID = installShaders("skybox/skybox.vs", "skybox/skybox.frag");
-	if (!checkProgramStatus(programID))
+	lightID = installShaders("light/lightShader.vs", "light/lightShader.frag");
+	if (!checkProgramStatus(programID)) {
 		return;
-	if (!checkProgramStatus(skyboxID))
+	}
+	if (!checkProgramStatus(skyboxID)) {
 		return;
+	}
+	if (!checkProgramStatus(lightID)) {
+		return;
+	}
 }
 
 void initializedGL(void)
@@ -492,9 +577,10 @@ void moonOrbitFunc() {
 
 void timerFunction(int id)
 {
-	earth_innRot_Degree += 0.3;
+	//earth_innRot_Degree += 0.3;
 	glass_innRot_Degree += 0.5;
 	moon_innRot_Degree += 1.0;
+	light_innRot_Degree += 0.3;
 	car_outnRot_Degree += car_orbit_speed;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
 	//moon orbit along earth

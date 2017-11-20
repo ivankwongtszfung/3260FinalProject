@@ -7,6 +7,8 @@ bool checkStatus(GLuint objectID, PFNGLGETSHADERIVPROC objectPropertyGetterFunc,
 {
 	GLint status;
 	objectPropertyGetterFunc(objectID, statusType, &status);
+	std::cout << objectID << std::endl;
+	std::cout << "Common" << std::endl;
 	if (status != GL_TRUE)
 	{
 		GLint infoLogLength;
@@ -15,8 +17,10 @@ bool checkStatus(GLuint objectID, PFNGLGETSHADERIVPROC objectPropertyGetterFunc,
 
 		GLsizei bufferSize;
 		getInfoLogFunc(objectID, infoLogLength, &bufferSize, buffer);
-		std::cout << buffer << std::endl;
+		
 
+		std::cout << buffer << std::endl;
+		system("pause");
 		delete[] buffer;
 		return false;
 	}
@@ -42,6 +46,7 @@ std::string readShaderCode(const char* fileName)
 	if (!meInput.good())
 	{
 		std::cout << "File failed to load..." << fileName;
+		system("pause");
 		exit(1);
 	}
 	return std::string(std::istreambuf_iterator<char>(meInput), std::istreambuf_iterator<char>());
