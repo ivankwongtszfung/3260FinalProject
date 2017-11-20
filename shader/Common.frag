@@ -6,6 +6,7 @@ in vec3 position;
 out vec4 daColor;
 
 uniform sampler2D myTextureSampler;
+
 uniform samplerCube cubeMap;
 uniform vec3 eyePositionWorld;
 uniform vec3 lightPositionWorld;
@@ -18,12 +19,12 @@ void main()
 {
 	vec3 position = vec3(0.0f, 0.0f, 0.0f);
 	vec3 Material_Clr = texture( myTextureSampler, UV).rgb;
+
 	// Diffuse
 	vec3 lightVectorWorld= normalize(lightPositionWorld - position);
 	float brightness = dot(lightVectorWorld, normalize(normalWorld));
 	//brightness
 	vec3 diffuseLight= coefficient_d*vec3(brightness);
-
 	// Specular
 	vec3 reflectedLightVectorWorld= reflect(-lightVectorWorld, normalWorld);
 	vec3 eyeVectorWorld= normalize(eyePositionWorld-position);
