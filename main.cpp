@@ -3,7 +3,8 @@
 #include "Dependencies\glm\gtc\type_ptr.hpp"
 #include "Dependencies\glm\glm.hpp"
 #include "Dependencies\glm\gtc\matrix_transform.hpp"
-//#include "Dependencies\glui\glui.h"
+#include "Dependencies\glui\glui.h"
+
 
 #include <iostream>
 #include <fstream>
@@ -24,6 +25,7 @@ float camera_fov = 45.0;
 const float ASPECT = float(16) / 9;
 
 int  mainWindowID;
+GLUI *glui;
 GLint programID;
 GLint skyboxID;
 GLint lightID;
@@ -83,9 +85,10 @@ extern GLuint rockVao;
 extern int drawRockSize;
 GLuint TextureRock[2];
 float rock_innRot_Degree = 0.0f;
+float rock_outnRot_Degree = 0.0f;
 
 //asteroidRing
-const int asteroidAmount = 10;
+const int asteroidAmount = 200;
 extern glm::mat4 asteroidMatrices[asteroidAmount];
 glm::mat4 rockModelMat_temp;
 
@@ -100,7 +103,8 @@ float cameraY = 0.0f;
 float cameraZ = distanceFromCenter;
 
 static float old_x = 0.0f, old_y = 0.0f;
-
+bool allowCameraMove = true;
+float tempCameraX = 0.0f, tempCameraY = 0.0f, tempCameraZ = distanceFromCenter;
 // ============================= lighting conf =============================//
 float a_brightness = 1.0f;
 float d_brightness = 0.0f;
@@ -116,18 +120,20 @@ void cameraPosition() {
 
 void Mouse_Wheel_Func(int button, int state, int x, int y)
 {
-	if ((button == 3) || (button == 4))
-	{
-		if (state == GLUT_UP) return;
-		if (button == 3)
+	if (allowCameraMove && distanceFromCenter < 50.0f) {
+		if ((button == 3) || (button == 4))
 		{
-			distanceFromCenter -= 1.0f;
-			cameraPosition();
-		}
-		else
-		{
-			distanceFromCenter += 1.0f;
-			cameraPosition();
+			if (state == GLUT_UP) return;
+			if (button == 3)
+			{
+				distanceFromCenter -= 1.0f;
+				cameraPosition();
+			}
+			else
+			{
+				distanceFromCenter += 1.0f;
+				cameraPosition();
+			}
 		}
 	}
 }
@@ -135,18 +141,47 @@ void Mouse_Wheel_Func(int button, int state, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	//change viewpoint
-	if (key == 'a') {
+	if (key == 'a') { //left view
+		if (allowCameraMove) {
+			tempCameraX = cameraX;
+			tempCameraY = cameraY;
+			tempCameraZ = cameraZ;
+		}
 		cameraX = -50.0f;
 		cameraY = 0.0f;
 		cameraZ = 0.0f;
+		allowCameraMove = false;
 	}
-	else if (key == 's') {
+	else if (key == 's') { //top view
+		if (allowCameraMove) {
+			tempCameraX = cameraX;
+			tempCameraY = cameraY;
+			tempCameraZ = cameraZ;
+		}
 		cameraX = 0.0f;
-		cameraY = 49.6f;
-		cameraZ = 30.0f;
+		cameraY = 30.0f;
+		cameraZ = -3.5f;
+		allowCameraMove = false;
 	}
-	else if (key == 'd') {
-		printf("press d");
+	else if (key == 'w') { //free view
+		if (!allowCameraMove) {
+			allowCameraMove = true;
+			cameraX = tempCameraX;
+			cameraY = tempCameraY;
+			cameraZ = tempCameraZ;
+		}
+	}
+
+	else if (key == 'd') { //front view
+		if (allowCameraMove) {
+			tempCameraX = cameraX;
+			tempCameraY = cameraY;
+			tempCameraZ = cameraZ;
+		}
+		cameraX = 0.0f;
+		cameraY = 0.0f;
+		cameraZ = 30.0f;
+		allowCameraMove = false;
 	}
 	else if (key == '7') {
 		a_brightness += 0.1f;
@@ -179,10 +214,6 @@ void keyboard(unsigned char key, int x, int y)
 	else if (key == 'z') {
 		xLightPos -= 0.1f;
 		printf("%.3lf\n", xLightPos);
-	}
-	else if (key == 'w') {
-		yLightPos += 0.1f;
-		printf("%.3lf\n", yLightPos);
 	}
 	else if (key == 'x') {
 		yLightPos -= 0.1f;
@@ -224,13 +255,15 @@ void move(int key, int x, int y)
 
 void PassiveMouse(int x, int y)
 {
-	float dety = y - old_y;
-	float detx = x - old_x;
-	pitch += dety / 10;
-	angleAroundCenter -= detx / 10;
-	cameraPosition();
-	old_x = x;
-	old_y = y;
+	if (allowCameraMove) {
+		float dety = y - old_y;
+		float detx = x - old_x;
+		pitch += dety / 10;
+		angleAroundCenter -= detx / 10;
+		cameraPosition();
+		old_x = x;
+		old_y = y;
+	}
 }
 
 // ============================= Function =============================//
@@ -558,13 +591,13 @@ void drawRock(void) {
 	glBindTexture(GL_TEXTURE_2D, TextureRock[1]);
 	glUniform1i(TextureID_1, 1);
 
-	glDrawArrays(GL_TRIANGLES, 0, drawRockSize);
+	//glDrawArrays(GL_TRIANGLES, 0, drawRockSize);
 }
 
 void drawRing() {
 	GLint modelTransformMatrixUniformLocation;
-	glm::mat4 rockOrbitIni = glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, -7.0f, 0.0f));
-	glm::mat4 rockOrbit_M = glm::rotate(rockOrbitIni, 89.0f, glm::vec3(0, 1, 0));
+	glm::mat4 rockOrbitIni = glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, -8.0f, 0.0f));
+	glm::mat4 rockOrbit_M = glm::rotate(rockOrbitIni, rock_outnRot_Degree, glm::vec3(0, 1, 0));
 	for (GLuint i = 0; i < asteroidAmount; i++) {
 		rockModelMat_temp = asteroidMatrices[i];
 		rockModelMat_temp = rockOrbit_M * rockModelMat_temp;
@@ -668,7 +701,7 @@ void timerFunction(int id)
 	glass_innRot_Degree += 0.5;
 	moon_innRot_Degree += 1.0;
 	light_innRot_Degree += 0.3;
-	rock_innRot_Degree += 0.3;
+	rock_outnRot_Degree -= 0.01;
 	car_outnRot_Degree += car_orbit_speed;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
 	//moon orbit along earth
@@ -693,6 +726,16 @@ void WindowSize(GLint width, GLint height) {
 	glutPostRedisplay();
 }
 
+void gluiInt(GLuint mainWindow) {
+	glui = GLUI_Master.create_glui_subwindow(mainWindow, GLUI_SUBWINDOW_RIGHT);
+	glui->set_main_gfx_window(mainWindow);
+	glui->add_separator();
+	GLUI_StaticText *infoText = glui->add_statictext("Universe Exploration");
+	infoText->set_alignment(GLUI_ALIGN_CENTER);
+	glui->add_separator();
+
+}
+
 int main(int argc, char *argv[])
 {
 	/*Initialization of GLUT library*/
@@ -706,8 +749,8 @@ int main(int argc, char *argv[])
 
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
-	mainWindowID = glutCreateWindow("i-Navigation");
-
+	GLuint mainWindow = glutCreateWindow(argv[0]);
+	gluiInt(mainWindow);
 	// initialize openGL
 	initializedGL();
 	// draw
