@@ -91,18 +91,15 @@ glm::mat4 rockModelMat_temp;
 
 // ============================= camera conf =============================//
 const float M_PI = 3.14159265;
-float radius = 30.0f;
-float initViewHorizontal = -90.0f;
-float initViewVertical = -90.0f;
+float distanceFromCenter = 30.0f;
+float pitch = 0.0f;
+float angleAroundCenter = 0.0f;
 
-float cameraX = 0;
-float cameraY = 0;
-float cameraZ = radius;
+float cameraX = 0.0f;
+float cameraY = 0.0f;
+float cameraZ = distanceFromCenter;
 
-float camera_angle = 0.0f;
 static float old_x = 0.0f, old_y = 0.0f;
-
-float viewRotateDegree[3] = { 1.0f, 1.0f, 0.0f };
 
 // ============================= lighting conf =============================//
 float a_brightness = 1.0f;
@@ -110,6 +107,13 @@ float d_brightness = 0.0f;
 float s_brightness = 0.6f;
 
 // ============================= User Input Function =============================//
+void cameraPosition() {
+	cameraY = distanceFromCenter * sin(glm::radians(pitch));
+	cameraX = - distanceFromCenter * cos(glm::radians(pitch)) * sin(glm::radians(angleAroundCenter));
+	cameraZ = - distanceFromCenter * cos(glm::radians(pitch)) * cos(glm::radians(angleAroundCenter));
+}
+
+
 void Mouse_Wheel_Func(int button, int state, int x, int y)
 {
 	if ((button == 3) || (button == 4))
@@ -117,19 +121,14 @@ void Mouse_Wheel_Func(int button, int state, int x, int y)
 		if (state == GLUT_UP) return;
 		if (button == 3)
 		{
-			radius -= 1.0f; //wheel up
-			cameraX = radius* cos(glm::radians(initViewHorizontal + viewRotateDegree[1]))*sin(glm::radians(initViewVertical + viewRotateDegree[0]));
-			cameraY = radius* cos(glm::radians(initViewVertical + viewRotateDegree[0]));
-			cameraZ = radius* sin(glm::radians(initViewHorizontal + viewRotateDegree[1]))*sin(glm::radians(initViewVertical + viewRotateDegree[0]));
+			distanceFromCenter -= 1.0f;
+			cameraPosition();
 		}
 		else
 		{
-			radius += 1.0f; //wheel down
-			cameraX = radius* cos(glm::radians(initViewHorizontal + viewRotateDegree[1]))*sin(glm::radians(initViewVertical + viewRotateDegree[0]));
-			cameraY = radius* cos(glm::radians(initViewVertical + viewRotateDegree[0]));
-			cameraZ = radius* sin(glm::radians(initViewHorizontal + viewRotateDegree[1]))*sin(glm::radians(initViewVertical + viewRotateDegree[0]));
+			distanceFromCenter += 1.0f;
+			cameraPosition();
 		}
-		printf("initViewVertical: %.2lf,cameraX: %.2lf,cameraY: %.2lf,cameraZ: %.2lf\n", initViewVertical, cameraX, cameraY,cameraZ);
 	}
 }
 
@@ -221,34 +220,17 @@ void move(int key, int x, int y)
 			car_orbit_radius -= 0.5f;
 	}
 	
-
-	
-	
-
 }
 
 void PassiveMouse(int x, int y)
 {
 	float dety = y - old_y;
 	float detx = x - old_x;
-	//initViewHorizontal += detx / 10;
-	if (dety < 0) {
-		if (cameraY > 0) {
-			cameraY += dety / 10;
-			initViewVertical += dety / 10;
-		}
-	}
-	else {
-		if (cameraY < 49) {
-			cameraY += dety / 10;
-			initViewVertical += dety / 10;
-		}
-	}
-	//initViewVertical = cameraY;
-	//cameraX += detx / 10;
+	pitch += dety / 10;
+	angleAroundCenter -= detx / 10;
+	cameraPosition();
 	old_x = x;
 	old_y = y;
-	printf("initViewVertical: %.2lf,cameraX: %.2lf,cameraY: %.2lf,cameraZ: %.2lf\n", initViewVertical, cameraX, cameraY, cameraZ);
 }
 
 // ============================= Function =============================//
@@ -584,7 +566,6 @@ void drawRing() {
 	glm::mat4 rockOrbitIni = glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, -7.0f, 0.0f));
 	glm::mat4 rockOrbit_M = glm::rotate(rockOrbitIni, 89.0f, glm::vec3(0, 1, 0));
 	for (GLuint i = 0; i < asteroidAmount; i++) {
-		printf("on9");
 		rockModelMat_temp = asteroidMatrices[i];
 		rockModelMat_temp = rockOrbit_M * rockModelMat_temp;
 		GLint M_ID = glGetUniformLocation(planetID, "MM");
@@ -643,7 +624,7 @@ void Shaders_Installer()
 	lightID = installShaders("light/lightShader.vs", "light/lightShader.frag");
 	glassID = installShaders("shader/Common.vs", "shader/Glass.frag");
 	planetID = installShaders("shader/Common.vs", "shader/Planet.frag");
-	if (!checkProgramStatus(programID))
+	if (!checkProgramStatus(programID)){
 		return;
 	}
 	if (!checkProgramStatus(skyboxID)) {
