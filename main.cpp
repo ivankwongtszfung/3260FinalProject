@@ -3,7 +3,8 @@
 #include "Dependencies\glm\gtc\type_ptr.hpp"
 #include "Dependencies\glm\glm.hpp"
 #include "Dependencies\glm\gtc\matrix_transform.hpp"
-//#include "Dependencies\glui\glui.h"
+#include "Dependencies\glui\glui.h"
+
 
 #include <iostream>
 #include <fstream>
@@ -24,6 +25,7 @@ float camera_fov = 45.0;
 const float ASPECT = float(16) / 9;
 
 int  mainWindowID;
+GLUI *glui;
 GLint programID;
 GLint skyboxID;
 GLint lightID;
@@ -73,7 +75,6 @@ GLuint cubeID;
 int cubeVaoSize;
 //light 
 float light_innRot_Degree = 0.0f;
-static glm::mat4 lightPositionMat;
 float xLightPos = 0.0f;
 float zLightPos = 0.0f;
 float yLightPos = 20.0f;
@@ -83,9 +84,10 @@ extern GLuint rockVao;
 extern int drawRockSize;
 GLuint TextureRock[2];
 float rock_innRot_Degree = 0.0f;
+float rock_outnRot_Degree = 0.0f;
 
 //asteroidRing
-const int asteroidAmount = 10;
+const int asteroidAmount = 200;
 extern glm::mat4 asteroidMatrices[asteroidAmount];
 glm::mat4 rockModelMat_temp;
 
@@ -100,7 +102,8 @@ float cameraY = 0.0f;
 float cameraZ = distanceFromCenter;
 
 static float old_x = 0.0f, old_y = 0.0f;
-
+bool allowCameraMove = true;
+float tempCameraX = 0.0f, tempCameraY = 0.0f, tempCameraZ = distanceFromCenter;
 // ============================= lighting conf =============================//
 float a_brightness = 1.0f;
 float d_brightness = 0.0f;
@@ -115,25 +118,27 @@ int fogEffectOnOff = 0; //0 = off, 1 = on
 // ============================= User Input Function =============================//
 void cameraPosition() {
 	cameraY = distanceFromCenter * sin(glm::radians(pitch));
-	cameraX = -distanceFromCenter * cos(glm::radians(pitch)) * sin(glm::radians(angleAroundCenter));
-	cameraZ = -distanceFromCenter * cos(glm::radians(pitch)) * cos(glm::radians(angleAroundCenter));
+	cameraX = - distanceFromCenter * cos(glm::radians(pitch)) * sin(glm::radians(angleAroundCenter));
+	cameraZ = - distanceFromCenter * cos(glm::radians(pitch)) * cos(glm::radians(angleAroundCenter));
 }
 
 
 void Mouse_Wheel_Func(int button, int state, int x, int y)
 {
-	if ((button == 3) || (button == 4))
-	{
-		if (state == GLUT_UP) return;
-		if (button == 3)
+	if (allowCameraMove && distanceFromCenter < 50.0f) {
+		if ((button == 3) || (button == 4))
 		{
-			distanceFromCenter -= 1.0f;
-			cameraPosition();
-		}
-		else
-		{
-			distanceFromCenter += 1.0f;
-			cameraPosition();
+			if (state == GLUT_UP) return;
+			if (button == 3)
+			{
+				distanceFromCenter -= 1.0f;
+				cameraPosition();
+			}
+			else
+			{
+				distanceFromCenter += 1.0f;
+				cameraPosition();
+			}
 		}
 	}
 }
@@ -141,14 +146,24 @@ void Mouse_Wheel_Func(int button, int state, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	//change viewpoint
-	if (key == 'a') {
+	if (key == 'a') { //left view
+		if (allowCameraMove) {
+			tempCameraX = cameraX;
+			tempCameraY = cameraY;
+			tempCameraZ = cameraZ;
+		}
 		cameraX = -50.0f;
 		cameraY = 0.0f;
 		cameraZ = 0.0f;
 		viewPoint->set_int_val(0);
 		allowCameraMove = false;
 	}
-	else if (key == 's') {
+	else if (key == 's') { //top view
+		if (allowCameraMove) {
+			tempCameraX = cameraX;
+			tempCameraY = cameraY;
+			tempCameraZ = cameraZ;
+		}
 		cameraX = 0.0f;
 		cameraY = 30.0f;
 		cameraZ = -3.5f;
@@ -176,8 +191,6 @@ void keyboard(unsigned char key, int x, int y)
 		cameraZ = 30.0f;
 		viewPoint->set_int_val(2);
 		allowCameraMove = false;
-		cameraY = 49.6f;
-		cameraZ = 30.0f;
 	}
 	else if (key == '7') {
 		a_brightness += 0.1f;
@@ -204,27 +217,23 @@ void keyboard(unsigned char key, int x, int y)
 		printf("%.3lf\n", s_brightness);
 	}
 	else if (key == 'q') {
-		xLightPos += 1.1f;
+		xLightPos += 0.1f;
 		printf("%.3lf\n", xLightPos);
 	}
 	else if (key == 'z') {
-		xLightPos -= 1.1f;
+		xLightPos -= 0.1f;
 		printf("%.3lf\n", xLightPos);
 	}
-	else if (key == 'w') {
-		yLightPos += 1.1f;
-		printf("%.3lf\n", yLightPos);
-	}
 	else if (key == 'x') {
-		yLightPos -= 1.1f;
+		yLightPos -= 0.1f;
 		printf("%.3lf\n", yLightPos);
 	}
-	else if (key == 'e') {
-		zLightPos += 1.1f;
+	else if(key=='e'){
+		zLightPos += 0.1f;
 		printf("%.3lf\n", zLightPos);
 	}
-	else if (key == 'c') {
-		zLightPos -= 1.1f;
+	else if(key=='c'){
+		zLightPos -= 0.1f;
 		printf("%.3lf\n", zLightPos);
 	}
 
@@ -241,29 +250,29 @@ void move(int key, int x, int y)
 	else if (key == GLUT_KEY_DOWN) {
 		if(car_orbit_speed > 2.0)
 			car_orbit_speed -= 1;
-		if (car_orbit_speed < 0.3)
-			car_orbit_speed += 0.01;
 	}
 	//orbit radius size
 	else if (key == GLUT_KEY_LEFT) {
 		car_orbit_radius += 0.5f;
 	}
 	else if (key == GLUT_KEY_RIGHT) {
-		if (car_orbit_radius > 5.5f)
+		if(car_orbit_radius > 5.5f)
 			car_orbit_radius -= 0.5f;
 	}
-
+	
 }
 
 void PassiveMouse(int x, int y)
 {
-	float dety = y - old_y;
-	float detx = x - old_x;
-	pitch += dety / 10;
-	angleAroundCenter -= detx / 10;
-	cameraPosition();
-	old_x = x;
-	old_y = y;
+	if (allowCameraMove) {
+		float dety = y - old_y;
+		float detx = x - old_x;
+		pitch += dety / 10;
+		angleAroundCenter -= detx / 10;
+		cameraPosition();
+		old_x = x;
+		old_y = y;
+	}
 }
 
 // ============================= Function =============================//
@@ -328,9 +337,9 @@ void set_lighting()
 	vec3 eyePosition(cameraX, cameraY, cameraZ);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
-/*	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
-	glm::vec3 lightPosition(lightPositionMat.xyz);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0])*/;
+	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	// light color
 	GLint lightColorUniformLocation = glGetUniformLocation(programID, "lightColor");
@@ -369,69 +378,6 @@ void set_lighting_light()
 	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
 }
 
-void set_lighting_glass()
-{
-	glUseProgram(glassID);
-
-	// ambient
-	GLint ambientLightUniformLocation = glGetUniformLocation(glassID, "ambientLight");
-	glm::vec3 ambientLight(a_brightness, a_brightness, a_brightness);
-	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
-	// diffusion
-	GLint kd = glGetUniformLocation(glassID, "coefficient_d");
-	glm::vec3 vec_kd(d_brightness, d_brightness, d_brightness);
-	glUniform3fv(kd, 1, &vec_kd[0]);
-	// specular
-	GLint ks = glGetUniformLocation(glassID, "coefficient_s");
-	glm::vec3 vec_ks(s_brightness, s_brightness, s_brightness);
-	glUniform3fv(ks, 1, &vec_ks[0]);
-	// eye position
-	GLint eyePositionUniformLocation = glGetUniformLocation(glassID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
-	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
-	// light position
-	GLint lightPositionUniformLocation = glGetUniformLocation(glassID, "lightPositionWorld");
-	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
-
-	// light color
-	GLint lightColorUniformLocation = glGetUniformLocation(glassID, "lightColor");
-	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
-	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
-}
-
-
-void set_lighting_planet()
-{
-	glUseProgram(planetID);
-
-	// ambient
-	GLint ambientLightUniformLocation = glGetUniformLocation(planetID, "ambientLight");
-	glm::vec3 ambientLight(a_brightness, a_brightness, a_brightness);
-	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
-	// diffusion
-	GLint kd = glGetUniformLocation(planetID, "coefficient_d");
-	glm::vec3 vec_kd(d_brightness, d_brightness, d_brightness);
-	glUniform3fv(kd, 1, &vec_kd[0]);
-	// specular
-	GLint ks = glGetUniformLocation(planetID, "coefficient_s");
-	glm::vec3 vec_ks(s_brightness, s_brightness, s_brightness);
-	glUniform3fv(ks, 1, &vec_ks[0]);
-	// eye position
-	GLint eyePositionUniformLocation = glGetUniformLocation(planetID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
-	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
-	// light position
-	GLint lightPositionUniformLocation = glGetUniformLocation(planetID, "lightPositionWorld");
-	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
-
-	// light color
-	GLint lightColorUniformLocation = glGetUniformLocation(planetID, "lightColor");
-	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
-	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
-}
-
 void drawcube() {
 
 	//cube
@@ -440,7 +386,7 @@ void drawcube() {
 	glUseProgram(skyboxID);
 	//skybox cube
 	glBindVertexArray(cubeVao);
-
+	
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
 	glm::mat4 rot_M = glm::mat4(1.0f);
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -490,7 +436,7 @@ void drawEarth(void)
 	// texture
 	GLuint TextureID_0 = glGetUniformLocation(planetID, "myTextureSampler");
 	GLuint TextureID_1 = glGetUniformLocation(planetID, "myTextureSampler_1");
-
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureEarth[0]);
 	glUniform1i(TextureID_0, 0);
@@ -545,16 +491,7 @@ void drawLightCube() {
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
 	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(light_innRot_Degree), glm::vec3(0, 1, 0));
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-
-	trans_M *= glm::translate(glm::mat4(), glm::vec3(20.0f, 0.0f, 0.0f));
-	trans_M *= glm::rotate(glm::mat4(), light_innRot_Degree, glm::vec3(0, 1, 0));
-	trans_M *= glm::translate(glm::mat4(), glm::vec3(-20.0f, 0.0f, 0.0f));
-
-	
-
 	glm::mat4 Model = trans_M * rot_M * scale_M;
-
-	lightPositionMat = Model;
 
 	GLint M_ID = glGetUniformLocation(programID, "MM");
 	glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
@@ -576,11 +513,11 @@ void drawMoon(void)
 	glBindVertexArray(moonVao);
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
 	//local rotation
-	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(moon_innRot_Degree), glm::vec3(0, 1, 0));
+	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(moon_innRot_Degree), glm::vec3(0, 1, 0)); 
 	//glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(-19.0f + moon_tranX, 0.75f + moon_tranY, 0.0f));
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(-19.0f, 0.75f, 0.0f)); //moon init position
-																						 //global rotation
-	trans_M *= glm::translate(glm::mat4(), glm::vec3(moon_orbit_radius, 0.0f, 0.0f));
+	//global rotation
+	trans_M *= glm::translate(glm::mat4(), glm::vec3(moon_orbit_radius, 0.0f, 0.0f)); 
 	trans_M *= glm::rotate(glm::mat4(), moon_outnRot_Degree, glm::vec3(0, 1, 0));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(-moon_orbit_radius, 0.0f, 0.0f));
 	glm::mat4 Model = trans_M * rot_M * scale_M;
@@ -613,7 +550,7 @@ void drawCar(void)
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
 	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), 89.0f, glm::vec3(0, 1, 1));
 	//init position
-	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f + car_orbit_radius, 2.0f + car_orbit_radius, 0.0f));
+	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f + car_orbit_radius, 2.0f+car_orbit_radius, 0.0f));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(-car_orbit_radius, -car_orbit_radius, 0.0f));
 	trans_M *= glm::rotate(glm::mat4(), car_outnRot_Degree, glm::vec3(0, 0, 1));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(car_orbit_radius, car_orbit_radius, 0.0f));
@@ -663,13 +600,13 @@ void drawRock(void) {
 	glBindTexture(GL_TEXTURE_2D, TextureRock[1]);
 	glUniform1i(TextureID_1, 1);
 
-	glDrawArrays(GL_TRIANGLES, 0, drawRockSize);
+	//glDrawArrays(GL_TRIANGLES, 0, drawRockSize);
 }
 
 void drawRing() {
 	GLint modelTransformMatrixUniformLocation;
-	glm::mat4 rockOrbitIni = glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, -7.0f, 0.0f));
-	glm::mat4 rockOrbit_M = glm::rotate(rockOrbitIni, 89.0f, glm::vec3(0, 1, 0));
+	glm::mat4 rockOrbitIni = glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, -8.0f, 0.0f));
+	glm::mat4 rockOrbit_M = glm::rotate(rockOrbitIni, rock_outnRot_Degree, glm::vec3(0, 1, 0));
 	for (GLuint i = 0; i < asteroidAmount; i++) {
 		rockModelMat_temp = asteroidMatrices[i];
 		rockModelMat_temp = rockOrbit_M * rockModelMat_temp;
@@ -685,27 +622,24 @@ void drawRing() {
 
 void paintGL(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glDepthMask(GL_FALSE);
 	// ================================ //
 	// view matrix
 	common_viewM = glm::lookAt(glm::vec3(cameraX, cameraY, cameraZ), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	// projection matrix
-	common_projection = glm::perspective(camera_fov, 16.0f / 9.0f, 0.1f, 200.0f);
-
+	common_projection = glm::perspective(camera_fov, 16.0f/9.0f, 0.1f, 200.0f);
+	
 	//=== draw ===//
 	// set lighting parameters
 	set_lighting();
-	set_lighting_glass();
-	set_lighting_planet();
-	//set_lighting_light();
+	set_lighting_light();
 	glEnable(GL_LIGHTING);
 	//skybox
 
 	drawcube();
 	glDepthMask(GL_TRUE);
 	// draw Planet A
-	set_lighting();
 	drawEarth();
 	// draw Planet B
 	drawMoon();
@@ -718,6 +652,9 @@ void paintGL(void)
 	//draw rock
 	drawRock();
 	drawRing();
+
+	
+	drawLightCube();
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -729,7 +666,7 @@ void Shaders_Installer()
 	lightID = installShaders("light/lightShader.vs", "light/lightShader.frag");
 	glassID = installShaders("shader/Common.vs", "shader/Glass.frag");
 	planetID = installShaders("shader/Common.vs", "shader/Planet.frag");
-	if (!checkProgramStatus(programID)) {
+	if (!checkProgramStatus(programID)){
 		return;
 	}
 	if (!checkProgramStatus(skyboxID)) {
@@ -745,25 +682,25 @@ void initializedGL(void)
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-
+	
 
 	// install all shaders
 	Shaders_Installer();
 	// load required obj and textures
 	sendDataToOpenGL();
-
+	
 }
 
 /*
 void moonOrbitFunc() {
-float radius = 0.8f;
-moon_outnRot_Degree += 0.1f;
-if (moon_outnRot_Degree > 360.0f)
-{
-moon_outnRot_Degree = 0.0f;
-}
-moon_tranX += radius * sinf(moon_outnRot_Degree);
-moon_tranY -= radius * cosf(moon_outnRot_Degree);
+	float radius = 0.8f;
+	moon_outnRot_Degree += 0.1f;
+	if (moon_outnRot_Degree > 360.0f)
+	{
+		moon_outnRot_Degree = 0.0f;
+	}
+	moon_tranX += radius * sinf(moon_outnRot_Degree);
+	moon_tranY -= radius * cosf(moon_outnRot_Degree);
 }
 */
 
@@ -775,12 +712,10 @@ void timerFunction(int id)
 	light_innRot_Degree += 0.3;
 	rock_outnRot_Degree -= 0.01;
 	car_outnRot_Degree += car_orbit_speed/100;
-	light_innRot_Degree += 0.05;
-	rock_innRot_Degree += 0.3;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
-								 //moon orbit along earth
-								 //moonOrbitFunc();
-								 //space vehicle orbit along earth
+	//moon orbit along earth
+	//moonOrbitFunc();
+	//space vehicle orbit along earth
 
 
 	glutPostRedisplay();
@@ -799,6 +734,7 @@ void WindowSize(GLint width, GLint height) {
 
 	glutPostRedisplay();
 }
+
 
 void controlCb(int control){
 	if (control == 1) { //viewpoint control
@@ -892,12 +828,12 @@ int main(int argc, char *argv[])
 	int height = GetSystemMetrics(SM_CYSCREEN)*0.8;
 	int width = GetSystemMetrics(SM_CYSCREEN)*1.42;
 
-	glutInitWindowSize(width, height);
+	glutInitWindowSize(width,height);
 
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
-	mainWindowID = glutCreateWindow("i-Navigation");
-
+	GLuint mainWindow = glutCreateWindow(argv[0]);
+	gluiInt(mainWindow);
 	// initialize openGL
 	initializedGL();
 	// draw
