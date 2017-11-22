@@ -19,7 +19,7 @@ int drawGlassSize = 0;
 GLuint rockVao;
 int drawRockSize = 0;
 
-const int asteroidAmount = 10;
+const int asteroidAmount = 200;
 glm::mat4 asteroidMatrices[asteroidAmount];
 
 void bindEarth(const char * path)

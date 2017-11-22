@@ -369,7 +369,7 @@ void set_lighting_light()
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 	GLint lightPositionUniformLocation = glGetUniformLocation(lightID, "lightPositionWorld");
-	glm::vec3 lightPosition(0.0, yLightPos, zLightPos);
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
 	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	// light color
@@ -549,7 +549,7 @@ void drawLightCube() {
 	//cube
 	GLfloat scale_fact = 2.0f;
 
-	glUseProgram(lightID);
+	glUseProgram(programID);
 	//skybox cube
 	glBindVertexArray(cubeVao);
 
