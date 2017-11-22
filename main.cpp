@@ -73,6 +73,7 @@ GLuint cubeID;
 int cubeVaoSize;
 //light 
 float light_innRot_Degree = 0.0f;
+static glm::mat4 lightPositionMat;
 float xLightPos = 0.0f;
 float zLightPos = 0.0f;
 float yLightPos = 20.0f;
@@ -327,9 +328,9 @@ void set_lighting()
 	vec3 eyePosition(cameraX, cameraY, cameraZ);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
-	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
-	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+/*	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
+	glm::vec3 lightPosition(lightPositionMat.xyz);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0])*/;
 
 	// light color
 	GLint lightColorUniformLocation = glGetUniformLocation(programID, "lightColor");
@@ -544,7 +545,16 @@ void drawLightCube() {
 	glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact));
 	glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(light_innRot_Degree), glm::vec3(0, 1, 0));
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+
+	trans_M *= glm::translate(glm::mat4(), glm::vec3(20.0f, 0.0f, 0.0f));
+	trans_M *= glm::rotate(glm::mat4(), light_innRot_Degree, glm::vec3(0, 1, 0));
+	trans_M *= glm::translate(glm::mat4(), glm::vec3(-20.0f, 0.0f, 0.0f));
+
+	
+
 	glm::mat4 Model = trans_M * rot_M * scale_M;
+
+	lightPositionMat = Model;
 
 	GLint M_ID = glGetUniformLocation(programID, "MM");
 	glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
@@ -708,9 +718,6 @@ void paintGL(void)
 	//draw rock
 	drawRock();
 	drawRing();
-
-
-	drawLightCube();
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -768,6 +775,7 @@ void timerFunction(int id)
 	light_innRot_Degree += 0.3;
 	rock_outnRot_Degree -= 0.01;
 	car_outnRot_Degree += car_orbit_speed/100;
+	light_innRot_Degree += 0.05;
 	rock_innRot_Degree += 0.3;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
 								 //moon orbit along earth
