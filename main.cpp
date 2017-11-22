@@ -31,7 +31,6 @@ GLint skyboxID;
 GLint lightID;
 GLint glassID;
 GLint planetID;
-
 // view matrix
 glm::mat4 common_viewM;
 glm::mat4 common_projection;
@@ -62,7 +61,7 @@ extern int drawCarSize;
 GLuint TextureCar;
 float car_outnRot_Degree = 0.0f;
 float car_orbit_radius = 8.0f;
-float car_orbit_speed = 0.02f;
+float car_orbit_speed = 2.0f;
 //skybox
 GLuint earth_cubemapTexture;
 
@@ -109,6 +108,12 @@ float tempCameraX = 0.0f, tempCameraY = 0.0f, tempCameraZ = distanceFromCenter;
 float a_brightness = 1.0f;
 float d_brightness = 0.0f;
 float s_brightness = 0.6f;
+// ============================= GLUI conf =============================//
+GLUI_RadioGroup *viewPoint;
+GLUI_RadioGroup *fogColour;
+int viewpointGroup; //0 = left 1 = top 2 = front
+int fogColourGroup; //0 = red 1 = yellow 2 = blue
+int fogEffectOnOff = 0; //0 = off, 1 = on
 
 // ============================= User Input Function =============================//
 void cameraPosition() {
@@ -150,6 +155,7 @@ void keyboard(unsigned char key, int x, int y)
 		cameraX = -50.0f;
 		cameraY = 0.0f;
 		cameraZ = 0.0f;
+		viewPoint->set_int_val(0);
 		allowCameraMove = false;
 	}
 	else if (key == 's') { //top view
@@ -161,6 +167,7 @@ void keyboard(unsigned char key, int x, int y)
 		cameraX = 0.0f;
 		cameraY = 30.0f;
 		cameraZ = -3.5f;
+		viewPoint->set_int_val(1);
 		allowCameraMove = false;
 	}
 	else if (key == 'w') { //free view
@@ -169,6 +176,7 @@ void keyboard(unsigned char key, int x, int y)
 			cameraX = tempCameraX;
 			cameraY = tempCameraY;
 			cameraZ = tempCameraZ;
+			viewPoint->set_int_val(3);
 		}
 	}
 
@@ -181,6 +189,7 @@ void keyboard(unsigned char key, int x, int y)
 		cameraX = 0.0f;
 		cameraY = 0.0f;
 		cameraZ = 30.0f;
+		viewPoint->set_int_val(2);
 		allowCameraMove = false;
 	}
 	else if (key == '7') {
@@ -235,12 +244,12 @@ void move(int key, int x, int y)
 	//Real-time speed and orbit control
 	//speed of vehicle
 	if (key == GLUT_KEY_UP) {
-		if(car_orbit_speed < 0.3)
-			car_orbit_speed += 0.01;
+		if(car_orbit_speed < 30.0)
+			car_orbit_speed += 1;
 	}
 	else if (key == GLUT_KEY_DOWN) {
-		if(car_orbit_speed > 0.02)
-			car_orbit_speed -= 0.01;
+		if(car_orbit_speed > 2.0)
+			car_orbit_speed -= 1;
 	}
 	//orbit radius size
 	else if (key == GLUT_KEY_LEFT) {
@@ -702,7 +711,7 @@ void timerFunction(int id)
 	moon_innRot_Degree += 1.0;
 	light_innRot_Degree += 0.3;
 	rock_outnRot_Degree -= 0.01;
-	car_outnRot_Degree += car_orbit_speed;
+	car_outnRot_Degree += car_orbit_speed/100;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
 	//moon orbit along earth
 	//moonOrbitFunc();
@@ -726,6 +735,58 @@ void WindowSize(GLint width, GLint height) {
 	glutPostRedisplay();
 }
 
+
+void controlCb(int control){
+	if (control == 1) { //viewpoint control
+		if (viewpointGroup == 0) { // left 
+			if (allowCameraMove) {
+				tempCameraX = cameraX;
+				tempCameraY = cameraY;
+				tempCameraZ = cameraZ;
+			}
+			allowCameraMove = false;
+			cameraX = -50.0f;
+			cameraY = 0.0f;
+			cameraZ = 0.0f;
+		}
+		else if (viewpointGroup == 1) { // top
+			if (allowCameraMove) {
+				tempCameraX = cameraX;
+				tempCameraY = cameraY;
+				tempCameraZ = cameraZ;
+			}
+			allowCameraMove = false;
+			cameraX = 0.0f;
+			cameraY = 30.0f;
+			cameraZ = -3.5f;
+		}
+		else if (viewpointGroup == 2) { // front
+			if (allowCameraMove) {
+				tempCameraX = cameraX;
+				tempCameraY = cameraY;
+				tempCameraZ = cameraZ;
+			}
+			allowCameraMove = false;
+			cameraX = 0.0f;
+			cameraY = 0.0f;
+			cameraZ = 30.0f;
+		}
+		else if (viewpointGroup == 3) { // free
+			if (!allowCameraMove) {
+				cameraX = tempCameraX;
+				cameraY = tempCameraY;
+				cameraZ = tempCameraZ;
+			}
+			allowCameraMove = true;
+		}
+	}
+	else if (control == 2 && fogEffectOnOff == 1) { //fog control
+		if (fogColourGroup == 0) {
+
+		}
+	}
+}
+
 void gluiInt(GLuint mainWindow) {
 	glui = GLUI_Master.create_glui_subwindow(mainWindow, GLUI_SUBWINDOW_RIGHT);
 	glui->set_main_gfx_window(mainWindow);
@@ -733,11 +794,33 @@ void gluiInt(GLuint mainWindow) {
 	GLUI_StaticText *infoText = glui->add_statictext("Universe Exploration");
 	infoText->set_alignment(GLUI_ALIGN_CENTER);
 	glui->add_separator();
-
+	//control vehicle speed
+	GLUI_Spinner *vehicleSpeed = glui->add_spinner("Vehicle Speed", GLUI_SPINNER_FLOAT, &car_orbit_speed);
+	vehicleSpeed->set_float_limits(2.0f,30.0f, GLUI_LIMIT_CLAMP);
+	vehicleSpeed->set_speed(0.5f);
+	glui->add_separator();
+	//define panel
+	GLUI_Rollout *renderControl = glui->add_rollout("Render Control");
+	GLUI_Panel *vpp = glui->add_panel_to_panel(renderControl, "View Point");
+	GLUI_Panel *fcp = glui->add_panel_to_panel(renderControl, "Fog Colour");
+	GLUI_Panel *fp = glui->add_panel_to_panel(renderControl, "Fog On/Off");
+	//radio group for viewpoint
+	viewPoint = glui->add_radiogroup_to_panel(vpp, &viewpointGroup,1,controlCb);
+		glui->add_radiobutton_to_group(viewPoint, "left"); //0
+		glui->add_radiobutton_to_group(viewPoint, "top"); //1
+		glui->add_radiobutton_to_group(viewPoint, "front"); //2
+		glui->add_radiobutton_to_group(viewPoint, "free"); //3
+		viewPoint->set_int_val(3);//initial free view
+	fogColour = glui->add_radiogroup_to_panel(fcp, &fogColourGroup,2,controlCb);
+		glui->add_radiobutton_to_group(fogColour, "red");
+		glui->add_radiobutton_to_group(fogColour, "yellow");
+		glui->add_radiobutton_to_group(fogColour, "blue");
+	GLUI_Checkbox *fogOnOff = glui->add_checkbox_to_panel(fp, "Fog",&fogEffectOnOff);
 }
 
 int main(int argc, char *argv[])
 {
+	printf("%d\n", fogEffectOnOff);
 	/*Initialization of GLUT library*/
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
