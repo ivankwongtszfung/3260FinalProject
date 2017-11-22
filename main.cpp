@@ -740,7 +740,7 @@ void timerFunction(int id)
 	//earth_innRot_Degree += 0.3;
 	glass_innRot_Degree += 0.5;
 	moon_innRot_Degree += 1.0;
-	light_innRot_Degree += 0.05;
+	light_innRot_Degree += 0.07;
 	rock_innRot_Degree += 0.3;
 	car_outnRot_Degree += car_orbit_speed;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
@@ -765,6 +765,8 @@ void WindowSize(GLint width, GLint height) {
 
 	glutPostRedisplay();
 }
+
+
 
 int main(int argc, char *argv[])
 {
