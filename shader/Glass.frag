@@ -1,7 +1,8 @@
 #version 430
 
 in vec2 UV;
-
+in vec3 normalWorld;
+in vec4 light;
 out vec4 daColor;
 
 uniform sampler2D myTextureSampler;
@@ -13,5 +14,5 @@ void main()
 	vec3 Material_Clr = (0.3*texture(myTextureSampler, UV) + 0.7*texture(myTextureSampler_1, UV)).rgb;
 	
 
-	daColor = vec4(Material_Clr, 1.0);
+	daColor = light  * vec4(Material_Clr, 1.0);
 }
