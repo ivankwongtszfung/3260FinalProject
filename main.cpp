@@ -337,9 +337,9 @@ void set_lighting()
 	vec3 eyePosition(cameraX, cameraY, cameraZ);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
-	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
-	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+/*	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
+	glm::vec3 lightPosition(lightPositionMat.xyz);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0])*/;
 
 	// light color
 	GLint lightColorUniformLocation = glGetUniformLocation(programID, "lightColor");
@@ -377,6 +377,71 @@ void set_lighting_light()
 	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
 	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
 }
+
+void set_lighting_glass()
+{
+	glUseProgram(glassID);
+
+	// ambient
+	GLint ambientLightUniformLocation = glGetUniformLocation(glassID, "ambientLight");
+	glm::vec3 ambientLight(a_brightness, a_brightness, a_brightness);
+	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
+	// diffusion
+	GLint kd = glGetUniformLocation(glassID, "coefficient_d");
+	glm::vec3 vec_kd(d_brightness, d_brightness, d_brightness);
+	glUniform3fv(kd, 1, &vec_kd[0]);
+	// specular
+	GLint ks = glGetUniformLocation(glassID, "coefficient_s");
+	glm::vec3 vec_ks(s_brightness, s_brightness, s_brightness);
+	glUniform3fv(ks, 1, &vec_ks[0]);
+	// eye position
+	GLint eyePositionUniformLocation = glGetUniformLocation(glassID, "eyePositionWorld");
+	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
+	// light position
+	GLint lightPositionUniformLocation = glGetUniformLocation(glassID, "lightPositionWorld");
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+
+	// light color
+	GLint lightColorUniformLocation = glGetUniformLocation(glassID, "lightColor");
+	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
+	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
+}
+
+
+void set_lighting_planet()
+{
+	glUseProgram(planetID);
+
+	// ambient
+	GLint ambientLightUniformLocation = glGetUniformLocation(planetID, "ambientLight");
+	glm::vec3 ambientLight(a_brightness, a_brightness, a_brightness);
+	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
+	// diffusion
+	GLint kd = glGetUniformLocation(planetID, "coefficient_d");
+	glm::vec3 vec_kd(d_brightness, d_brightness, d_brightness);
+	glUniform3fv(kd, 1, &vec_kd[0]);
+	// specular
+	GLint ks = glGetUniformLocation(planetID, "coefficient_s");
+	glm::vec3 vec_ks(s_brightness, s_brightness, s_brightness);
+	glUniform3fv(ks, 1, &vec_ks[0]);
+	// eye position
+	GLint eyePositionUniformLocation = glGetUniformLocation(planetID, "eyePositionWorld");
+	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
+	// light position
+	GLint lightPositionUniformLocation = glGetUniformLocation(planetID, "lightPositionWorld");
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+
+	// light color
+	GLint lightColorUniformLocation = glGetUniformLocation(planetID, "lightColor");
+	glm::vec4 lightColor(1.0, 1.0, 1.0, 1.0);
+	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
+}
+
+
 
 void drawcube() {
 
@@ -634,6 +699,8 @@ void paintGL(void)
 	// set lighting parameters
 	set_lighting();
 	set_lighting_light();
+	set_lighting_planet();
+	set_lighting_glass();
 	glEnable(GL_LIGHTING);
 	//skybox
 
@@ -712,6 +779,8 @@ void timerFunction(int id)
 	//light_innRot_Degree += 0.3;
 	rock_outnRot_Degree -= 0.01;
 	car_outnRot_Degree += car_orbit_speed/100;
+	light_innRot_Degree += 0.07;
+	rock_innRot_Degree += 0.3;
 	moon_outnRot_Degree += 0.01; //moon rotation speed
 	//moon orbit along earth
 	//moonOrbitFunc();
