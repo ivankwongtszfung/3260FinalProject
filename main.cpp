@@ -4,7 +4,10 @@
 #include "Dependencies\glm\glm.hpp"
 #include "Dependencies\glm\gtc\matrix_transform.hpp"
 #include "Dependencies\glui\glui.h"
-
+#include "Dependencies\irrKlang\irrKlang.h"
+#include "Dependencies\irrKlang\conio.h"
+using namespace irrklang;
+#pragma comment(lib, "irrKlang.lib")
 
 #include <iostream>
 #include <fstream>
@@ -19,6 +22,7 @@
 using namespace std;
 using glm::vec3;
 using glm::mat4;
+
 // ============================= window conf =============================//
 int Win_w, Win_h;
 float camera_fov = 45.0;
@@ -773,7 +777,7 @@ void moonOrbitFunc() {
 
 void timerFunction(int id)
 {
-	//earth_innRot_Degree += 0.3;
+	earth_innRot_Degree += 0.3;
 	glass_innRot_Degree += 0.5;
 	moon_innRot_Degree += 1.0;
 	//light_innRot_Degree += 0.3;
@@ -889,7 +893,15 @@ void gluiInt(GLuint mainWindow) {
 
 int main(int argc, char *argv[])
 {
-	printf("%d\n", fogEffectOnOff);
+	ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
+	if (!engine)
+	{
+		printf("Could not startup engine\n");
+		return 0; // error starting up the engine
+	}
+	engine->play2D("media/getout.ogg", true);
+
+
 	/*Initialization of GLUT library*/
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
@@ -920,6 +932,7 @@ int main(int argc, char *argv[])
 
 	/*Enter the GLUT event processing loop which never returns.*/
 	glutMainLoop();
+	engine->drop(); // delete engine
 
 	return 0;
 }
