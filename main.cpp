@@ -985,8 +985,8 @@ void gluiInt(GLuint mainWindow) {
 int main(int argc, char *argv[])
 {
 	//background music
-	//ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
-	//engine->play2D("media/getout.ogg", true);
+	ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
+	engine->play2D("media/getout.ogg", true);
 
 	/*Initialization of GLUT library*/
 	glutInit(&argc, argv);
@@ -1019,7 +1019,7 @@ int main(int argc, char *argv[])
 
 	/*Enter the GLUT event processing loop which never returns.*/
 	glutMainLoop();
-	//engine->drop(); // delete engine
+	engine->drop(); // delete engine
 
 	return 0;
 }
