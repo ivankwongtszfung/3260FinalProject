@@ -66,9 +66,13 @@ GLuint TextureCar;
 float car_outnRot_Degree = 0.0f;
 float car_orbit_radius = 8.0f;
 float car_orbit_speed = 2.0f;
+vec3 carPos = vec3(-2.0, 10.0, 0.0); //current car position
+vec3 lastCarPos = vec3(-2.0, 10.0, 0.0); //last car position
+vec3 carFront; //vector that the car is facing
+bool cameraOnCar = false;
+
 //skybox
 GLuint earth_cubemapTexture;
-
 extern GLuint cubeVao;
 extern int drawCubeSize;
 
@@ -101,13 +105,13 @@ float distanceFromCenter = 30.0f;
 float pitch = 0.0f;
 float angleAroundCenter = 0.0f;
 
-float cameraX = 0.0f;
-float cameraY = 0.0f;
-float cameraZ = distanceFromCenter;
+vec3 camera = vec3(0.0f, 0.0f, distanceFromCenter);
+vec3 tempCamera = vec3(0.0f, 0.0f, distanceFromCenter);
+glm::vec3 cameraLookAt = glm::vec3(0, 0, 0);
+glm::vec3 cameraNorm = glm::vec3(0, 1, 0);
 
 static float old_x = 0.0f, old_y = 0.0f;
 bool allowCameraMove = true;
-float tempCameraX = 0.0f, tempCameraY = 0.0f, tempCameraZ = distanceFromCenter;
 // ============================= lighting conf =============================//
 float a_brightness = 1.0f;
 float d_brightness = 0.0f;
@@ -121,9 +125,9 @@ int fogEffectOnOff = 0; //0 = off, 1 = on
 
 // ============================= User Input Function =============================//
 void cameraPosition() {
-	cameraY = distanceFromCenter * sin(glm::radians(pitch));
-	cameraX = - distanceFromCenter * cos(glm::radians(pitch)) * sin(glm::radians(angleAroundCenter));
-	cameraZ = - distanceFromCenter * cos(glm::radians(pitch)) * cos(glm::radians(angleAroundCenter));
+	camera.y = distanceFromCenter * sin(glm::radians(pitch));
+	camera.x = - distanceFromCenter * cos(glm::radians(pitch)) * sin(glm::radians(angleAroundCenter));
+	camera.z = - distanceFromCenter * cos(glm::radians(pitch)) * cos(glm::radians(angleAroundCenter));
 }
 
 
@@ -152,48 +156,38 @@ void keyboard(unsigned char key, int x, int y)
 	//change viewpoint
 	if (key == 'a') { //left view
 		if (allowCameraMove) {
-			tempCameraX = cameraX;
-			tempCameraY = cameraY;
-			tempCameraZ = cameraZ;
+			tempCamera = camera;
 		}
-		cameraX = -50.0f;
-		cameraY = 0.0f;
-		cameraZ = 0.0f;
+		camera = vec3(-50.0f, 0.0f, 0.0f);
 		viewPoint->set_int_val(0);
+		cameraOnCar = false;
 		allowCameraMove = false;
 	}
 	else if (key == 's') { //top view
 		if (allowCameraMove) {
-			tempCameraX = cameraX;
-			tempCameraY = cameraY;
-			tempCameraZ = cameraZ;
+			tempCamera = camera;
 		}
-		cameraX = 0.0f;
-		cameraY = 30.0f;
-		cameraZ = -3.5f;
+		camera = vec3(0.0f, 30.0f, -3.5f);
 		viewPoint->set_int_val(1);
+		cameraOnCar = false;
 		allowCameraMove = false;
 	}
 	else if (key == 'w') { //free view
 		if (!allowCameraMove) {
+			cameraOnCar = false;
 			allowCameraMove = true;
-			cameraX = tempCameraX;
-			cameraY = tempCameraY;
-			cameraZ = tempCameraZ;
+			camera = tempCamera;
 			viewPoint->set_int_val(3);
 		}
 	}
 
 	else if (key == 'd') { //front view
 		if (allowCameraMove) {
-			tempCameraX = cameraX;
-			tempCameraY = cameraY;
-			tempCameraZ = cameraZ;
+			tempCamera = camera;
 		}
-		cameraX = 0.0f;
-		cameraY = 0.0f;
-		cameraZ = 30.0f;
+		camera = vec3(0.0f, 0.0f, 30.0f);
 		viewPoint->set_int_val(2);
+		cameraOnCar = false;
 		allowCameraMove = false;
 	}
 	else if (key == '7') {
@@ -338,7 +332,7 @@ void set_lighting()
 	glUniform3fv(ks, 1, &vec_ks[0]);
 	// eye position
 	GLint eyePositionUniformLocation = glGetUniformLocation(programID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	vec3 eyePosition(camera.x, camera.y, camera.z);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 /*	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
@@ -369,7 +363,7 @@ void set_lighting_light()
 	glUniform3fv(ks, 1, &vec_ks[0]);
 	// eye position
 	GLint eyePositionUniformLocation = glGetUniformLocation(lightID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	vec3 eyePosition(camera.x, camera.y, camera.z);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 	GLint lightPositionUniformLocation = glGetUniformLocation(lightID, "lightPositionWorld");
@@ -400,7 +394,7 @@ void set_lighting_glass()
 	glUniform3fv(ks, 1, &vec_ks[0]);
 	// eye position
 	GLint eyePositionUniformLocation = glGetUniformLocation(glassID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	vec3 eyePosition(camera.x, camera.y, camera.z);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 	GLint lightPositionUniformLocation = glGetUniformLocation(glassID, "lightPositionWorld");
@@ -432,7 +426,7 @@ void set_lighting_planet()
 	glUniform3fv(ks, 1, &vec_ks[0]);
 	// eye position
 	GLint eyePositionUniformLocation = glGetUniformLocation(planetID, "eyePositionWorld");
-	vec3 eyePosition(cameraX, cameraY, cameraZ);
+	vec3 eyePosition(camera.x, camera.y, camera.z);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
 	GLint lightPositionUniformLocation = glGetUniformLocation(planetID, "lightPositionWorld");
@@ -624,6 +618,12 @@ void drawCar(void)
 	trans_M *= glm::rotate(glm::mat4(), car_outnRot_Degree, glm::vec3(0, 0, 1));
 	trans_M *= glm::translate(glm::mat4(), glm::vec3(car_orbit_radius, car_orbit_radius, 0.0f));
 	glm::mat4 Model = trans_M * rot_M * scale_M;
+	carPos.x = trans_M[3][0]+1.0;
+	carPos.y = trans_M[3][1];
+	carPos.z = trans_M[3][2];
+	carFront = carPos - lastCarPos;
+	lastCarPos = carPos;
+
 
 	GLint M_ID = glGetUniformLocation(programID, "MM");
 	glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
@@ -686,7 +686,9 @@ void drawRing() {
 		GLint P_ID = glGetUniformLocation(planetID, "PM");
 		glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
 		glDrawArrays(GL_TRIANGLES, 0, drawRockSize);
+		//glDrawArraysInstanced(GL_TRIANGLES, 0, drawRockSize, asteroidAmount);
 	}
+	//glDrawArraysInstanced(GL_TRIANGLES, 0, drawRockSize, asteroidAmount);
 }
 
 void paintGL(void)
@@ -695,7 +697,7 @@ void paintGL(void)
 	glDepthMask(GL_FALSE);
 	// ================================ //
 	// view matrix
-	common_viewM = glm::lookAt(glm::vec3(cameraX, cameraY, cameraZ), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	common_viewM = glm::lookAt(camera, cameraLookAt, cameraNorm);
 	// projection matrix
 	common_projection = glm::perspective(camera_fov, 16.0f/9.0f, 0.1f, 200.0f);
 	
@@ -723,7 +725,6 @@ void paintGL(void)
 	//draw rock
 	drawRock();
 	drawRing();
-
 	
 	drawLightCube();
 	glutSwapBuffers();
@@ -789,7 +790,11 @@ void timerFunction(int id)
 	//moon orbit along earth
 	//moonOrbitFunc();
 	//space vehicle orbit along earth
-
+	if (cameraOnCar) {
+		camera = carPos;
+		cameraLookAt = carFront;
+		cameraNorm = vec3(0, glm::normalize(carPos.y), 0);
+	}
 
 	glutPostRedisplay();
 	glutTimerFunc(700.0f / 60.0f, timerFunction, 1);
@@ -813,44 +818,49 @@ void controlCb(int control){
 	if (control == 1) { //viewpoint control
 		if (viewpointGroup == 0) { // left 
 			if (allowCameraMove) {
-				tempCameraX = cameraX;
-				tempCameraY = cameraY;
-				tempCameraZ = cameraZ;
+				tempCamera = camera;
 			}
 			allowCameraMove = false;
-			cameraX = -50.0f;
-			cameraY = 0.0f;
-			cameraZ = 0.0f;
+			camera = vec3(-50.0f, 0.0f, 0.0f);
+			cameraLookAt = glm::vec3(0, 0, 0);
+			cameraNorm = glm::vec3(0, 1, 0);
+			cameraOnCar = false;
 		}
 		else if (viewpointGroup == 1) { // top
 			if (allowCameraMove) {
-				tempCameraX = cameraX;
-				tempCameraY = cameraY;
-				tempCameraZ = cameraZ;
+				tempCamera = camera;
 			}
 			allowCameraMove = false;
-			cameraX = 0.0f;
-			cameraY = 30.0f;
-			cameraZ = -3.5f;
+			camera = vec3(0.0f, 30.0f, -3.5f);
+			cameraLookAt = glm::vec3(0, 0, 0);
+			cameraNorm = glm::vec3(0, 1, 0);
+			cameraOnCar = false;
 		}
 		else if (viewpointGroup == 2) { // front
 			if (allowCameraMove) {
-				tempCameraX = cameraX;
-				tempCameraY = cameraY;
-				tempCameraZ = cameraZ;
+				tempCamera = camera;
 			}
 			allowCameraMove = false;
-			cameraX = 0.0f;
-			cameraY = 0.0f;
-			cameraZ = 30.0f;
+			camera = vec3(0.0f, 0.0f, 30.0f);
+			cameraLookAt = glm::vec3(0, 0, 0);
+			cameraNorm = glm::vec3(0, 1, 0);
+			cameraOnCar = false;
 		}
 		else if (viewpointGroup == 3) { // free
 			if (!allowCameraMove) {
-				cameraX = tempCameraX;
-				cameraY = tempCameraY;
-				cameraZ = tempCameraZ;
+				camera = tempCamera;
+				cameraLookAt = glm::vec3(0, 0, 0);
+				cameraNorm = glm::vec3(0, 1, 0);
 			}
 			allowCameraMove = true;
+			cameraOnCar = false;
+		}
+		else if (viewpointGroup == 4) { // car
+			if (allowCameraMove) {
+				tempCamera = camera;
+			}
+			allowCameraMove = false;
+			cameraOnCar = true;
 		}
 	}
 	else if (control == 2 && fogEffectOnOff == 1) { //fog control
@@ -883,6 +893,8 @@ void gluiInt(GLuint mainWindow) {
 		glui->add_radiobutton_to_group(viewPoint, "top"); //1
 		glui->add_radiobutton_to_group(viewPoint, "front"); //2
 		glui->add_radiobutton_to_group(viewPoint, "free"); //3
+		glui->add_radiobutton_to_group(viewPoint, "car"); //4
+
 		viewPoint->set_int_val(3);//initial free view
 	fogColour = glui->add_radiogroup_to_panel(fcp, &fogColourGroup,2,controlCb);
 		glui->add_radiobutton_to_group(fogColour, "red");
@@ -893,14 +905,9 @@ void gluiInt(GLuint mainWindow) {
 
 int main(int argc, char *argv[])
 {
+	//background music
 	ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
-	if (!engine)
-	{
-		printf("Could not startup engine\n");
-		return 0; // error starting up the engine
-	}
 	engine->play2D("media/getout.ogg", true);
-
 
 	/*Initialization of GLUT library*/
 	glutInit(&argc, argv);
