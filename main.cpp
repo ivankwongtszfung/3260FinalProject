@@ -58,6 +58,10 @@ extern GLuint glassVao;
 extern int drawGlassSize;
 GLuint TextureGlass[2];
 float glass_innRot_Degree = 0.0f;
+//star
+const int starAmount = 5;
+extern glm::mat4 starMatrices[starAmount];
+
 
 //Space vehicle
 extern GLuint carVao;
@@ -69,6 +73,9 @@ float car_orbit_speed = 2.0f;
 vec3 carPos = vec3(-2.0, 10.0, 0.0); //current car position
 vec3 lastCarPos = vec3(-2.0, 10.0, 0.0); //last car position
 vec3 carFront; //vector that the car is facing
+
+static vec3 carPosArr[starAmount];
+static int carPosIndex = 0;
 bool cameraOnCar = false;
 
 //skybox
@@ -98,6 +105,13 @@ float rock_outnRot_Degree = 0.0f;
 const int asteroidAmount = 200;
 extern glm::mat4 asteroidMatrices[asteroidAmount];
 glm::mat4 rockModelMat_temp;
+
+//star
+extern GLuint starVao;
+extern int drawStarSize;
+GLuint TextureStar;
+glm::mat4 starModelMat_temp;
+vec3 starPos;
 
 // ============================= camera conf =============================//
 const float M_PI = 3.14159265;
@@ -298,6 +312,8 @@ void LoadAllTextures()
 	//rock
 	TextureRock[0] = loadBMP2Texture("texture/stone.bmp");
 	TextureRock[1] = loadBMP2Texture("normal_map/stone_normal.bmp");
+	//star
+	TextureStar = loadBMP2Texture("texture/starfy.bmp");
 }
 
 void sendDataToOpenGL()
@@ -310,6 +326,7 @@ void sendDataToOpenGL()
 	bindCar("model_obj/helicopter2.obj");
 	bindRock("model_obj/rock.obj");
 	bindAsteroidRing();
+	bindStar("model_obj/starfy.obj");
 	// load all textures
 	LoadAllTextures();
 }
@@ -691,6 +708,37 @@ void drawRing() {
 	//glDrawArraysInstanced(GL_TRIANGLES, 0, drawRockSize, asteroidAmount);
 }
 
+void drawStar() {
+	GLfloat scale_fact[starAmount] = { 0.2f,0.18f,0.16f,0.14f,0.12f };
+
+	glUseProgram(programID);
+
+	glBindVertexArray(starVao);
+	for (GLuint i = 0; i < starAmount; i++) {
+		glm::mat4 scale_M = glm::scale(glm::mat4(1.0f), glm::vec3(scale_fact[i]));
+		//local rotation
+		glm::mat4 rot_M = glm::rotate(glm::mat4(1.0f), glm::radians(10.0f), glm::vec3(0, 1, 0));
+		glm::mat4 trans_M;
+		trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(carPosArr[i]));
+		glm::mat4 Model = trans_M * rot_M * scale_M;
+
+		GLint M_ID = glGetUniformLocation(programID, "MM");
+		glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
+		GLint V_ID = glGetUniformLocation(programID, "VM");
+		glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
+		GLint P_ID = glGetUniformLocation(programID, "PM");
+		glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
+
+		// texture
+		GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureStar);
+		glUniform1i(TextureID, 0);
+		glActiveTexture(GL_TEXTURE1);
+		glDrawArrays(GL_TRIANGLES, 0, drawStarSize);
+	}
+}
+
 void paintGL(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
@@ -725,7 +773,9 @@ void paintGL(void)
 	//draw rock
 	drawRock();
 	drawRing();
-	
+	//draw trajectory
+	drawStar();
+
 	drawLightCube();
 	glutSwapBuffers();
 	glutPostRedisplay();
@@ -776,6 +826,12 @@ void moonOrbitFunc() {
 }
 */
 
+void recordCarPos(vec3 carPos) {
+	for (carPosIndex = 0; carPosIndex < starAmount; carPosIndex++) {
+		carPosArr[carPosIndex] = carPos;
+	}
+}
+
 void timerFunction(int id)
 {
 	earth_innRot_Degree += 0.3;
@@ -795,9 +851,32 @@ void timerFunction(int id)
 		cameraLookAt = carFront;
 		cameraNorm = vec3(0, glm::normalize(carPos.y), 0);
 	}
-
 	glutPostRedisplay();
 	glutTimerFunc(700.0f / 60.0f, timerFunction, 1);
+}
+
+void starTimeFunction(int id) {
+	starPos = lastCarPos;
+	if (starPos.y <= 0) {
+		starPos.x -= 1.0f;
+	}
+		
+	if (starPos.x >= 0) {
+		starPos.y -= 2.0f;
+	}
+	else {
+		starPos.y -= 1.0f;
+	}
+	//recordCarPos(starPos);
+	carPosArr[4] = carPosArr[3];
+	carPosArr[3] = carPosArr[2];
+	carPosArr[2] = carPosArr[1];
+	carPosArr[1] = carPosArr[0];
+	carPosArr[0] = starPos;
+
+	glutPostRedisplay();
+	glutTimerFunc(10000.0f / 60.0f, starTimeFunction, 2);
+
 }
 
 void WindowSize(GLint width, GLint height) {
@@ -906,8 +985,8 @@ void gluiInt(GLuint mainWindow) {
 int main(int argc, char *argv[])
 {
 	//background music
-	ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
-	engine->play2D("media/getout.ogg", true);
+	//ISoundEngine* engine = createIrrKlangDevice(); //can ignore the error
+	//engine->play2D("media/getout.ogg", true);
 
 	/*Initialization of GLUT library*/
 	glutInit(&argc, argv);
@@ -933,13 +1012,14 @@ int main(int argc, char *argv[])
 	glutPassiveMotionFunc(PassiveMouse);
 
 	glutTimerFunc(700.0f / 60.0f, timerFunction, 1);
+	glutTimerFunc(10000.0f / 60.0f, starTimeFunction, 2);
 
 	//keep aspect ratio
 	glutReshapeFunc(WindowSize);
 
 	/*Enter the GLUT event processing loop which never returns.*/
 	glutMainLoop();
-	engine->drop(); // delete engine
+	//engine->drop(); // delete engine
 
 	return 0;
 }
