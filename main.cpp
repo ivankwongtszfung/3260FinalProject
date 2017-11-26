@@ -40,6 +40,8 @@ extern GLuint earthVao;
 extern int drawEarthSize;
 GLuint TextureEarth[2];
 float earth_innRot_Degree = 0.0f;
+float fogD = 0.001;
+float fogG = 3.5;
 
 //Planet B
 extern GLuint moonVao;
@@ -236,6 +238,23 @@ void keyboard(unsigned char key, int x, int y)
 		zLightPos -= 0.1f;
 		printf("%.3lf\n", zLightPos);
 	}
+	else if (key == '4') {
+		fogD += 0.01f;
+		printf("%.3lf\n", fogD);
+	}
+	else if (key == '0') {
+		fogD -= 0.01f;
+		printf("%.3lf\n", fogD);
+	}
+	else if (key == '5') {
+		fogG += 0.1f;
+		printf("%.3lf\n", fogG);
+	}
+	else if (key == '6') {
+		fogG -= 0.1f;
+		printf("%.3lf\n", fogG);
+	}
+
 
 }
 
@@ -337,9 +356,9 @@ void set_lighting()
 	vec3 eyePosition(cameraX, cameraY, cameraZ);
 	glUniform3fv(eyePositionUniformLocation, 1, &eyePosition[0]);
 	// light position
-/*	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
-	glm::vec3 lightPosition(lightPositionMat.xyz);
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0])*/;
+	GLint lightPositionUniformLocation = glGetUniformLocation(programID, "lightPositionWorld");
+	glm::vec3 lightPosition(xLightPos, yLightPos, zLightPos);
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	// light color
 	GLint lightColorUniformLocation = glGetUniformLocation(programID, "lightColor");
@@ -441,7 +460,41 @@ void set_lighting_planet()
 	glUniform4fv(lightColorUniformLocation, 1, &lightColor[0]);
 }
 
+void set_Fog() {
+	glUseProgram(programID);
+	GLint programFog = glGetUniformLocation(programID, "FogFlag");
+	GLint FogDensity = glGetUniformLocation(programID, "FogDensity");
+	GLint FogGradient = glGetUniformLocation(programID, "FogGradient");
+	glUniform1f(programFog, 1);
+	glUniform1f(FogDensity,fogD);
+	glUniform1f(FogGradient,fogG);
 
+	glUseProgram(glassID);
+	GLint glassFog = glGetUniformLocation(glassID, "FogFlag");
+	FogDensity = glGetUniformLocation(glassID, "FogDensity");
+	FogGradient = glGetUniformLocation(glassID, "FogGradient");
+	glUniform1f(glassFog, 1);
+	glUniform1f(FogDensity, 0.05);
+	glUniform1f(FogGradient, 3.5);
+
+	glUseProgram(planetID);
+	GLint planetFog = glGetUniformLocation(planetID, "FogFlag");
+	FogDensity = glGetUniformLocation(planetID, "FogDensity");
+	FogGradient = glGetUniformLocation(planetID, "FogGradient");
+	glUniform1f(planetFog, 1);
+	glUniform1f(FogDensity, 0.05);
+	glUniform1f(FogGradient, 3.5);
+
+	glUseProgram(skyboxID);
+	GLint skyboxFog = glGetUniformLocation(skyboxID, "FogFlag");
+	FogDensity = glGetUniformLocation(skyboxID, "FogDensity");
+	FogGradient = glGetUniformLocation(skyboxID, "FogGradient");
+	glUniform1f(skyboxFog, 0);
+	glUniform1f(FogDensity, 0.05);
+	glUniform1f(FogGradient, 3.5);
+
+
+}
 
 void drawcube() {
 
@@ -500,8 +553,11 @@ void drawEarth(void)
 
 	// texture
 	GLuint TextureID_0 = glGetUniformLocation(planetID, "myTextureSampler");
-	GLuint TextureID_1 = glGetUniformLocation(planetID, "myTextureSampler_1");
-	
+	GLuint TextureID_1 = glGetUniformLocation(planetID, "myTextureSampler_normal");
+	//enable texture
+	GLuint TextureEnable = glGetUniformLocation(planetID, "normalEnable");
+	glUniform1i(TextureEnable,1);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureEarth[0]);
 	glUniform1i(TextureID_0, 0);
@@ -534,6 +590,10 @@ void drawGlass(void)
 	// texture
 	GLuint TextureID_0 = glGetUniformLocation(glassID, "myTextureSampler");
 	GLuint TextureID_1 = glGetUniformLocation(glassID, "myTextureSampler_1");
+	//disable texture
+	GLuint TextureEnable = glGetUniformLocation(glassID, "normalEnable");
+	glUniform1i(TextureEnable, 0);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureGlass[0]);
 	glUniform1i(TextureID_0, 0);
@@ -549,7 +609,7 @@ void drawLightCube() {
 	//cube
 	GLfloat scale_fact = 2.0f;
 
-	glUseProgram(programID);
+	glUseProgram(lightID);
 	//skybox cube
 	glBindVertexArray(cubeVao);
 
@@ -558,11 +618,11 @@ void drawLightCube() {
 	glm::mat4 trans_M = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	glm::mat4 Model = trans_M * rot_M * scale_M;
 
-	GLint M_ID = glGetUniformLocation(programID, "MM");
+	GLint M_ID = glGetUniformLocation(lightID, "MM");
 	glUniformMatrix4fv(M_ID, 1, GL_FALSE, &Model[0][0]);
-	GLint V_ID = glGetUniformLocation(programID, "VM");
+	GLint V_ID = glGetUniformLocation(lightID, "VM");
 	glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
-	GLint P_ID = glGetUniformLocation(programID, "PM");
+	GLint P_ID = glGetUniformLocation(lightID, "PM");
 	glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
 	// texture
 
@@ -593,7 +653,9 @@ void drawMoon(void)
 	glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
 	GLint P_ID = glGetUniformLocation(programID, "PM");
 	glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
-
+	//enable texture
+	GLuint TextureEnable = glGetUniformLocation(programID, "normalEnable");
+	glUniform1i(TextureEnable, 0);
 	// texture
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
 	glActiveTexture(GL_TEXTURE0);
@@ -627,7 +689,9 @@ void drawCar(void)
 	glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
 	GLint P_ID = glGetUniformLocation(programID, "PM");
 	glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
-
+	//enable texture
+	GLuint TextureEnable = glGetUniformLocation(programID, "normalEnable");
+	glUniform1i(TextureEnable, 0);
 	// texture
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
 	glActiveTexture(GL_TEXTURE0);
@@ -654,10 +718,12 @@ void drawRock(void) {
 	glUniformMatrix4fv(V_ID, 1, GL_FALSE, &common_viewM[0][0]);
 	GLint P_ID = glGetUniformLocation(planetID, "PM");
 	glUniformMatrix4fv(P_ID, 1, GL_FALSE, &common_projection[0][0]);
-
+	//enable texture
+	GLuint TextureEnable = glGetUniformLocation(programID, "normalEnable");
+	glUniform1i(TextureEnable, 1);
 	// texture
 	GLuint TextureID_0 = glGetUniformLocation(planetID, "myTextureSampler");
-	GLuint TextureID_1 = glGetUniformLocation(planetID, "myTextureSampler_1");
+	GLuint TextureID_1 = glGetUniformLocation(planetID, "myTextureSampler_normal");
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureRock[0]);
 	glUniform1i(TextureID_0, 0);
@@ -688,7 +754,7 @@ void drawRing() {
 void paintGL(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	glDepthMask(GL_FALSE);
+	
 	// ================================ //
 	// view matrix
 	common_viewM = glm::lookAt(glm::vec3(cameraX, cameraY, cameraZ), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
@@ -697,13 +763,14 @@ void paintGL(void)
 	
 	//=== draw ===//
 	// set lighting parameters
+	set_Fog();
 	set_lighting();
 	set_lighting_light();
 	set_lighting_planet();
 	set_lighting_glass();
 	glEnable(GL_LIGHTING);
 	//skybox
-
+	glDepthMask(GL_FALSE);
 	drawcube();
 	glDepthMask(GL_TRUE);
 	// draw Planet A
@@ -720,8 +787,6 @@ void paintGL(void)
 	drawRock();
 	drawRing();
 
-	
-	drawLightCube();
 	glutSwapBuffers();
 	glutPostRedisplay();
 }

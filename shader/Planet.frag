@@ -3,19 +3,22 @@
 in vec2 UV;
 in vec3 normalWorld;
 in vec4 light;
+in float visibility;
 out vec4 daColor;
 
+const vec3 fogColor = vec3(0.5, 0.5,0.5);
+
 uniform sampler2D myTextureSampler;
-uniform sampler2D myTextureSampler_1;
 
 void main()
 {
 
 	vec3 normal = normalWorld;
 
-	vec3 normalColor = normalize(texture( myTextureSampler_1, UV ).rgb*2.0 - 1.0);
+	
 	vec3 Material_Clr = texture(myTextureSampler, UV).rgb;
-	daColor =light * vec4(Material_Clr,1.0);
+	vec4 lightColor =light * vec4(Material_Clr,1.0);
+	daColor= vec4(mix(fogColor,lightColor.rgb,visibility),1);
 	
 
 

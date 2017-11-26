@@ -4,6 +4,10 @@ in layout(location = 0) vec3 vertexPosition_modelspace;
 in layout(location = 1) vec2 vertexUV;
 in layout(location = 2) vec3 normal;
 
+uniform float FogDensity;
+uniform float FogGradient;
+uniform bool FogFlag;
+
 uniform mat4 PM;
 uniform mat4 MM;
 uniform mat4 VM;
@@ -16,10 +20,14 @@ uniform vec3 ambientLight;
 uniform vec3 coefficient_d;
 uniform vec3 coefficient_s;
 uniform vec4 lightColor;
+uniform bool normalEnable;
+
+uniform sampler2D myTextureSampler_normal;
 
 out vec3 normalWorld;
 out vec2 UV;
 out vec4 light;
+out float visibility;
 
 void main()
 {
@@ -29,7 +37,20 @@ void main()
 	vec4 testPos = MM * v;
 	vec4 normal_temp = MM * vec4(normal, 0);
 	normalWorld = normal_temp.xyz;
+	if(normalEnable){
+		normalWorld = (texture( myTextureSampler_normal, UV ).rgb*2.0) - 1.0;
+	}
 
+	if(FogFlag)
+	{
+		float distance = length(VM * MM * v);
+		visibility = exp(-pow((distance*FogDensity),FogGradient))*10000;
+		visibility = clamp(visibility,0,1);
+	}
+	else{
+		visibility = 1;
+	}
+	
 	UV = vertexUV;
 
 	// Diffuse

@@ -41,5 +41,5 @@ void main()
 	vec3 specularLight= coefficient_s * s;
 	light=vec4((ambientLight+ clamp(diffuseLight, 0, 1) + specularLight),1.0);
 
-	
+	light=vec4(1.0,1.0,1.0,1.0);
 }
