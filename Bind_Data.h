@@ -16,8 +16,6 @@ void bindCar(const char * path);
 void bindCube();
 void bindRock(const char * path);
 void bindAsteroidRing();
-void bindStar(const char * path);
-
 /*** END OF FILE ***/
 
 #endif /* __BIND_DATA_H__ */
